@@ -1,30 +1,12 @@
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#ifdef ESP32
+    #include <WiFi.h>
+#else
+    #include <ESP8266WiFi.h>
+#endif
 #include "fauxmoESP.h"
 
-
-#define SERIAL_BAUDRATE                 115200
-#define LED                             2
-
-#define WIFI_SSID "GnetFritz"
-#define WIFI_PASS "singstarsingstar"
-
-
-// set number of used relays, their pin number and names
-const int RelayCount = 2;
-const int RelayPins[] = { 4, 5 };
-const char* RelayNames[] = { "Wasser eins", "Wasser zwei" };
-// set automatic shutdown times in seconds for each relay (0 disables the auto power down feature)
-const int shutDownSeconds[] = { 600, 600 };
-
-
-
-// a button for each relay
-const bool useButtons = false;
-const int ButtonPins[] = { 6, 7 };
-const unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
-
-
+#include "config.h"
 
 
 // this library does all the wemo things
@@ -37,20 +19,21 @@ unsigned long lastDebounceTime[RelayCount];  // the last time the output pin was
 
 
 
-// -----------------------------------------------------------------------------
-// Wifi..........Pls CHANGE YOUR WIFI CONFIGURATION!!!!!!!!!!!
-// -----------------------------------------------------------------------------
+
+// setup WIFI connection
 void wifiSetup()
 {
     // Set WIFI module to STA mode
     WiFi.mode(WIFI_STA);
-
-    // Connect
+    
+    // set IP - there is contriting info on when to call config. before or after begin
+    WiFi.config(ip, gateway, subnet);
+    
     Serial.printf("[WIFI] Connecting to %s ", WIFI_SSID);
+    // connect to wifi
     WiFi.begin(WIFI_SSID, WIFI_PASS);
-    WiFi.config(IPAddress(192,168,1,99), IPAddress(192,168,1,1), IPAddress(255,255,255,0), IPAddress(192,168,1,1));
 
-    // Wait
+    // Wait until connected
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print(".");
         delay(100);
@@ -60,6 +43,7 @@ void wifiSetup()
     // Connected!
     Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
+
 
 void setup()
 {
@@ -131,6 +115,7 @@ void setup()
 		}
 	});
 }
+
 
 void loop()
 {
