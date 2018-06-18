@@ -23,25 +23,25 @@ unsigned long durations[RelayCount]; // 0 is off; other values are the ticks at 
 // setup WIFI connection
 void wifiSetup()
 {
-    // Set WIFI module to STA mode
-    WiFi.mode(WIFI_STA);
-    
-    // set IP - there is contriting info on when to call config. before or after begin
-    WiFi.config(ip, gateway, subnet);
-    
-    Serial.printf("[WIFI] Connecting to %s ", WIFI_SSID);
-    // connect to wifi
-    WiFi.begin(WIFI_SSID, WIFI_PASS);
+	// Set WIFI module to STA mode
+	WiFi.mode(WIFI_STA);
 
-    // Wait until connected
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(100);
-    }
-    Serial.println();
+	// set IP - there is contriting info on when to call config. before or after begin
+	WiFi.config(ip, gateway, subnet);
 
-    // Connected!
-    Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
+	Serial.printf("[WIFI] Connecting to %s ", WIFI_SSID);
+	// connect to wifi
+	WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+	// Wait until connected
+	while (WiFi.status() != WL_CONNECTED) {
+		Serial.print(".");
+		delay(100);
+	}
+	Serial.println();
+
+	// Connected!
+	Serial.printf("[WIFI] STATION Mode, SSID: %s, IP address: %s\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str());
 }
 
 
@@ -73,27 +73,27 @@ void setup()
 		durations[i] = 0;
 	}
 
-  // setup Buttons
+	// setup Buttons
 	if(UseButtons)
 	{
-    Serial.println("setup buttons:");
-    
-    for (int i = 0; i < RelayCount; i++) 
-    {
-      if(ButtonPins[i] != 0)
-      {
-        Serial.print("setup pin as button: ");
-        Serial.print(ButtonPins[i]);
-        Serial.print(" for device: ");
-        Serial.print(RelayNames[i]);
-        Serial.println();
-        
-        buttons[i].attach( ButtonPins[i] , INPUT_PULLUP  );     //setup the bounce instance for the current button
-        buttons[i].interval(ButtonDelay);                       // interval in ms
-      }
-    }
+		Serial.println("setup buttons:");
+
+		for (int i = 0; i < RelayCount; i++) 
+		{
+			if(ButtonPins[i] != 0)
+			{
+				Serial.print("setup pin as button: ");
+				Serial.print(ButtonPins[i]);
+				Serial.print(" for device: ");
+				Serial.print(RelayNames[i]);
+				Serial.println();
+				
+				buttons[i].attach( ButtonPins[i] , INPUT_PULLUP  );     //setup the bounce instance for the current button
+				buttons[i].interval(ButtonDelay);                       // interval in ms
+			}
+		}
 	}
-	
+
 	// start FAUXMO library
 	fauxmo.enable(true);
 
@@ -140,27 +140,31 @@ void loop()
 	{
 		for (int i = 0; i < RelayCount; i = i + 1)
 		{
-      // do not check uninitialized button pins
-      if(ButtonPins[i] != 0)
-      {
-        // Update the Bounce instance
-        buttons[i].update();
+			// do not check uninitialized button pins
+			if(ButtonPins[i] != 0)
+			{
+				// Update the Bounce instance
+				buttons[i].update();
+
+				// If it fell (it was pressed for x ms and was now released), flag the need to toggle
+				if ( buttons[i].fell() )
+				{
+          Serial.print("Button ");
+          Serial.print(i);
+          Serial.println(" was pressed!");          
         
-        // If it fell (it was pressed for x ms and was now released), flag the need to toggle
-        if ( buttons[i].fell() )
-        {
-          if(durations[i] == 0)
-          {
-            // turn on
-            setRelay(i, true);
-          }
-          else
-          {
-            // turn off
-            setRelay(i, false);
-          }
-        }
-      }
+					if(durations[i] == 0)
+					{
+						// turn on
+						setRelay(i, true);
+					}
+					else
+					{
+						// turn off
+						setRelay(i, false);
+					}
+				}
+			}
 		}
 	}
 
@@ -171,7 +175,7 @@ void loop()
 		if(durations[i] > 0 && ShutDownSeconds[i] > 0)
 		{
 			unsigned long duration = timeNow - durations[i];
-      // above shutdown duration?
+			// above shutdown duration?
 			if(duration > ShutDownSeconds[i] * 1000)
 			{
 				Serial.print("Auto Shutdown Time exceeded for Relay: ");
@@ -179,8 +183,8 @@ void loop()
 				Serial.print("Shutdown after ");
 				Serial.print(duration / 1000);
 				Serial.println(" seconds.");
-        
-        // turn off
+
+				// turn off
 				setRelay(i, false);
 			}
 		}
