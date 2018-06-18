@@ -5,18 +5,18 @@
     #include <ESP8266WiFi.h>
 #endif
 #include "fauxmoESP.h"
-
+#include <Bounce2.h>
 #include "config.h"
 
+
+// buttons
+Bounce * buttons = new Bounce[RelayCount];
 
 // this library does all the wemo things
 fauxmoESP fauxmo;
 
 // variables used for auto power off; they store the turn-on-time for each relay.
 unsigned long durations[RelayCount]; // 0 is off; other values are the ticks at turn on
-int lastButtonState[RelayCount];
-unsigned long lastDebounceTime[RelayCount];  // the last time the output pin was toggled
-
 
 
 
@@ -72,18 +72,29 @@ void setup()
 		digitalWrite(RelayPins[i], HIGH);
 		durations[i] = 0;
 	}
-	
-	if(useButtons)
+
+  // setup Buttons
+	if(UseButtons)
 	{
-		for (int i = 0; i < RelayCount; i = i + 1)
-		{
-			pinMode(ButtonPins[i], INPUT);
-			lastButtonState[i] = LOW;
-			lastDebounceTime[i] = 0;
-		}
+    Serial.println("setup buttons:");
+    
+    for (int i = 0; i < RelayCount; i++) 
+    {
+      if(ButtonPins[i] != 0)
+      {
+        Serial.print("setup pin as button: ");
+        Serial.print(ButtonPins[i]);
+        Serial.print(" for device: ");
+        Serial.print(RelayNames[i]);
+        Serial.println();
+        
+        buttons[i].attach( ButtonPins[i] , INPUT_PULLUP  );     //setup the bounce instance for the current button
+        buttons[i].interval(ButtonDelay);                       // interval in ms
+      }
+    }
 	}
 	
-	// start library
+	// start FAUXMO library
 	fauxmo.enable(true);
 
 	// Add virtual devices
@@ -125,53 +136,57 @@ void loop()
 	unsigned long timeNow = millis();
 
 	// check buttons
-	if(useButtons)
+	if(UseButtons)
 	{
 		for (int i = 0; i < RelayCount; i = i + 1)
 		{
-			int reading  = digitalRead(ButtonPins[i]);
-			
-			// If the switch changed, due to noise or pressing:
-			if (reading  != lastButtonState[i])
-			{
-				// reset the debouncing timer
-				lastDebounceTime[i] = millis();
-			}
-
-			if((timeNow - lastDebounceTime[i]) > debounceDelay)
-			{
-				// whatever the reading is at, it's been there for longer than the debounce
-				// delay, so take it as the actual current state:
-				
-				// button is pressed. invert relay state.
-				Serial.println("Button pressed");
-				setRelay(i, durations[i] == 0);
-			}
-
-			// lastButtonState[i] = val;
+      // do not check uninitialized button pins
+      if(ButtonPins[i] != 0)
+      {
+        // Update the Bounce instance
+        buttons[i].update();
+        
+        // If it fell (it was pressed for x ms and was now released), flag the need to toggle
+        if ( buttons[i].fell() )
+        {
+          if(durations[i] == 0)
+          {
+            // turn on
+            setRelay(i, true);
+          }
+          else
+          {
+            // turn off
+            setRelay(i, false);
+          }
+        }
+      }
 		}
 	}
 
 	// check timers for auto power off
 	for (int i = 0; i < RelayCount; i = i + 1)
 	{
-		// is there a shutdown time for this relay? and is relay active?
-		if(shutDownSeconds[i] > 0 && durations[i] > 0)
+		// if relay is active and there is a shutdown time for this relay
+		if(durations[i] > 0 && ShutDownSeconds[i] > 0)
 		{
 			unsigned long duration = timeNow - durations[i];
-			if(duration > shutDownSeconds[i] * 1000)
+      // above shutdown duration?
+			if(duration > ShutDownSeconds[i] * 1000)
 			{
 				Serial.print("Auto Shutdown Time exceeded for Relay: ");
 				Serial.println(RelayNames[i]);
 				Serial.print("Shutdown after ");
 				Serial.print(duration / 1000);
 				Serial.println(" seconds.");
+        
+        // turn off
 				setRelay(i, false);
 			}
 		}
 	}
 
-	// make sure the ESP has some time to do whatever it wants to do
+	// make sure the ESP has some time to do whatever it wants to do (wifi..)
 	yield();
 }
 

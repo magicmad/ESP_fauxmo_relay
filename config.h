@@ -12,18 +12,18 @@ const IPAddress subnet(255, 255, 255, 0); // subnet mask
 
 
 // set number of used relays, their pin number and names
-const int RelayCount = 2;
-const int RelayPins[] = { 4, 5 };
-const char* RelayNames[] = { "Wasser eins", "Wasser zwei" };
+const unsigned int RelayCount = 3;
+const unsigned int RelayPins[] = { 4, 5, 6 };
+const char* RelayNames[] = { "Wasser eins", "Wasser zwei", "Wasser drei" };
 // set automatic shutdown times in seconds for each relay (0 disables the auto power down feature)
-const int shutDownSeconds[] = { 600, 600 };
+const int ShutDownSeconds[] = { 600, 600, 0 };
 
 
 
 // a button for each relay
-const bool useButtons = false;
-const int ButtonPins[] = { 6, 7 };
-const unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+const bool UseButtons = true;
+const int ButtonPins[] = { 7, 8, 9 };          // use 0 to disable button
+const unsigned int ButtonDelay = 50;          // debounce delay (increase if button toggles during press)
 
 
 
