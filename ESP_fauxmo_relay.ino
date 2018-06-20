@@ -70,7 +70,7 @@ void setup()
 
     pinMode(RelayPins[i], OUTPUT);
     digitalWrite(RelayPins[i], HIGH);
-    durations[i] = 0;
+    powerOnMillis[i] = 0;
   }
 
   // setup Buttons
